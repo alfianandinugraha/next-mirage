@@ -44,7 +44,7 @@ const Home: NextPage = () => {
   const toast = useToast({
     duration: 2000,
     variant: "solid",
-    position: "bottom-right",
+    position: "bottom-left",
   });
   const getUsersQuery = useQuery("users", fetchUsers, { retry: false });
   const storeUserQuery = useMutation<HttpResponse, any, Omit<User, "id">>(
