@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@chakra-ui/toast";
 import { CircularProgress } from "@chakra-ui/progress";
 import React, { useEffect, useMemo, useState } from "react";
+import GithubCorner from "components/github-corner";
 
 const fetchUsers = async () => {
   return axios.get<HttpResponse<User[]>>("/api/users").then((res) => res.data);
@@ -127,6 +128,7 @@ const Home: NextPage = () => {
       <Head>
         <title>Next Users</title>
       </Head>
+      <GithubCorner />
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Heading as="h1" size="xl">
           next-mirage
