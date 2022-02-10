@@ -18,7 +18,7 @@ import { Input } from "@chakra-ui/input";
 import { useForm } from "react-hook-form";
 import { useToast } from "@chakra-ui/toast";
 import { CircularProgress } from "@chakra-ui/progress";
-import { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const fetchUsers = async () => {
   return axios.get<HttpResponse<User[]>>("/api/users").then((res) => res.data);
@@ -28,6 +28,10 @@ const storeUser = async (fullName: string, email: string) => {
   return axios
     .post<HttpResponse>("/api/users", { fullName, email })
     .then((res) => res.data);
+};
+
+const deleteUser = async (id: string) => {
+  return axios.delete<HttpResponse>(`/api/users/${id}`).then((res) => res.data);
 };
 
 const Home: NextPage = () => {
@@ -42,18 +46,24 @@ const Home: NextPage = () => {
     variant: "solid",
     position: "bottom-right",
   });
-  const usersQuery = useQuery("users", fetchUsers, { retry: false });
+  const getUsersQuery = useQuery("users", fetchUsers, { retry: false });
   const storeUserQuery = useMutation<HttpResponse, any, Omit<User, "id">>(
     (data) => {
       return storeUser(data.fullName, data.email);
     }
   );
+  const deleteUserQuery = useMutation<HttpResponse, any, Pick<User, "id">>(
+    (data) => {
+      return deleteUser(data.id);
+    }
+  );
+  const [users, setUsers] = useState<User[]>([]);
 
-  const refetchHandler = () => usersQuery.refetch();
+  const refetchHandler = () => getUsersQuery.refetch();
 
   const canUseForm = useMemo(
-    () => storeUserQuery.isLoading || usersQuery.isFetching,
-    [storeUserQuery.isLoading, usersQuery.isFetching]
+    () => storeUserQuery.isLoading || getUsersQuery.isFetching,
+    [storeUserQuery.isLoading, getUsersQuery.isFetching]
   );
 
   const formSubmitHandler = () => {
@@ -69,7 +79,7 @@ const Home: NextPage = () => {
           status: "success",
         });
         reset();
-        usersQuery.refetch();
+        getUsersQuery.refetch();
       })
       .catch((err) => {
         toast({
@@ -80,6 +90,38 @@ const Home: NextPage = () => {
       });
   };
 
+  function deleteUserHandler(
+    this: Pick<User, "id">,
+    e: React.MouseEvent<HTMLButtonElement>
+  ) {
+    const target = e.target as HTMLButtonElement;
+    target.disabled = true;
+
+    deleteUserQuery
+      .mutateAsync({
+        id: this.id,
+      })
+      .then((data) => {
+        toast({
+          description: data.message,
+          title: "Success",
+          status: "success",
+        });
+        setUsers((users) => users.filter((user) => user.id !== this.id));
+      })
+      .catch((err) => {
+        toast({
+          description: err?.response?.data?.message ?? "Something wrong",
+          title: "Failed",
+          status: "error",
+        });
+      });
+  }
+
+  useEffect(() => {
+    if (getUsersQuery.data?.data) setUsers(getUsersQuery.data.data);
+  }, [getUsersQuery.data]);
+
   return (
     <Container maxWidth="container.lg" py="10">
       <Head>
@@ -87,22 +129,22 @@ const Home: NextPage = () => {
       </Head>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Heading as="h1" size="xl">
-          Next-mirage
+          next-mirage
         </Heading>
         <Button
           colorScheme="blue"
           onClick={refetchHandler}
-          disabled={usersQuery.isFetching}
+          disabled={getUsersQuery.isFetching}
         >
           Refetch
         </Button>
       </Box>
       <Box mt="2" mb="4">
-        {usersQuery.isFetching ? (
+        {getUsersQuery.isFetching ? (
           <Text color="gray.200">Fetch users...</Text>
         ) : (
           <>
-            {usersQuery.isSuccess ? (
+            {getUsersQuery.isSuccess ? (
               <Text color="green.400">Fetch users success!</Text>
             ) : (
               <Text color="red.400">Fetch users failed!</Text>
@@ -138,29 +180,38 @@ const Home: NextPage = () => {
           Send
         </Button>
       </HStack>
-      {usersQuery.isFetching ? (
+      {getUsersQuery.isFetching ? (
         <Center mt="8">
           <CircularProgress isIndeterminate color="blue.600" />
         </Center>
       ) : null}
-      {usersQuery.isSuccess && !usersQuery.isFetching ? (
+      {getUsersQuery.isSuccess && !getUsersQuery.isFetching ? (
         <>
-          {usersQuery.data.data?.length ? (
+          {users.length ? (
             <Table variant="simple">
               <Thead>
                 <Tr>
                   <Th>Id</Th>
                   <Th>Full Name</Th>
                   <Th>Email</Th>
+                  <Th>Action</Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {usersQuery.data.data?.map((user) => {
+                {users.map((user) => {
                   return (
                     <Tr key={user.id}>
                       <Td>{user.id}</Td>
                       <Td>{user.fullName}</Td>
                       <Td>{user.email}</Td>
+                      <Td>
+                        <Button
+                          colorScheme="red"
+                          onClick={deleteUserHandler.bind({ id: user.id })}
+                        >
+                          Delete
+                        </Button>
+                      </Td>
                     </Tr>
                   );
                 })}

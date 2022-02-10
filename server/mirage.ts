@@ -54,6 +54,24 @@ const makeServer = () => {
         },
         { timing: 2000 }
       );
+
+      this.delete(
+        "/users/:id",
+        (schema, request) => {
+          const id = request.params.id;
+          const user = schema.find("user", id);
+
+          if (!user)
+            return new Response(404, {}, { message: "User not found" });
+
+          user.destroy();
+
+          return {
+            message: "Delete user successfully",
+          };
+        },
+        { timing: 2000 }
+      );
     },
   });
 };
