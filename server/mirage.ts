@@ -45,6 +45,19 @@ const makeServer = () => {
               }
             );
 
+          const emailPattern =
+            /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+          const isValidEmail = emailPattern.test(email);
+
+          if (!isValidEmail)
+            return new Response(
+              401,
+              {},
+              {
+                message: "Invalid email",
+              }
+            );
+
           const payload: any = { fullName, email };
           schema.create("user", payload);
 
@@ -52,7 +65,7 @@ const makeServer = () => {
             message: "Store user success",
           };
         },
-        { timing: 2000 }
+        { timing: 1500 }
       );
 
       this.delete(
@@ -70,7 +83,7 @@ const makeServer = () => {
             message: "Delete user successfully",
           };
         },
-        { timing: 2000 }
+        { timing: 1500 }
       );
     },
   });
